@@ -35,6 +35,7 @@ import Door.Access.Door8800.Command.System.WriteTCPSetting;
 import Door.Access.Door8800.Door8800Identity;
 import java.util.concurrent.Semaphore;
 import static javax.management.Query.times;
+import java.nio.charset.StandardCharsets;
 //for API
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -155,7 +156,10 @@ public class Test implements INConnectorEvent {
 //            System.out.println("Wait for device to connect");
 //        }
          if (cmd instanceof OpenDoor) {
-              System.out.println("Door Opened");
+             //saving 
+             
+              System.out.println("Transaction Finished");
+              
          }
     }
     
@@ -224,6 +228,7 @@ public class Test implements INConnectorEvent {
          System.out.println("命令返回的校验和错误，已失败！");
     }
     
+    
       @Override
     public void WatchEvent(ConnectorDetail detial, INData event) {
         
@@ -233,116 +238,128 @@ public class Test implements INConnectorEvent {
                   CardTransaction card = (CardTransaction) watchEvent.EventData;
                    boolean found = false;
                    String cardFound = "";
-            //API FETCHING
-              // try {
-            // 1. Create a URL object
-                URL url = new URL("http://165.232.165.96/api/fetch-cards");
-
-                // 2. Open a connection
+                   String door_scanned = "";
+                   String scanned_type = "";
+                   String door_name = "Door 1";
+                   String request_type = "checking";
+                URL url = new URL("https://usm.org/api/check-card");
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-
-                // 3. Set request method (GET)
-                connection.setRequestMethod("GET");
-
-                // 4. Read the response
+                
+                connection.setRequestMethod("POST");
+                connection.setDoOutput(true);
+                
+                if(card.DoorNum() == 2)
+                {
+                    door_scanned = "left";
+                    scanned_type = "exit";
+                }else{
+                    door_scanned = "right";
+                    scanned_type = "entry";
+                }
+                
+              String parameters = "id_number="+card.CardData+"&source="+door_scanned+"&scanned_type="+scanned_type+"&door_name="+door_name+"&request_type="+request_type+"";
+                
+                try (OutputStream os = connection.getOutputStream()) {
+                byte[] input = parameters.getBytes(StandardCharsets.UTF_8);
+                os.write(input, 0, input.length);
+                }
                 int responseCode = connection.getResponseCode();
-                if (responseCode == 200) { // HTTP status code 200 indicates success
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                    String line;
-                    StringBuilder response = new StringBuilder();
-
-                    while ((line = reader.readLine()) != null) {
+                
+                  if (responseCode == HttpURLConnection.HTTP_OK) {
+                       BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                       String line;
+                       StringBuilder response = new StringBuilder();
+                        while ((line = reader.readLine()) != null) {
                         response.append(line);
                     }
                     reader.close();
-
-                    // 5. Process the response
+                    connection.disconnect();  
                     String responseData = response.toString();
-                    
-                    String[] cardNumbers;
-                     String[] responseParts = responseData.split("\"card_number\":\"");
-                    cardNumbers = new String[responseParts.length - 1];
-                    
-                      for (int i = 1; i < responseParts.length; i++) {
-                        String cardNumber = responseParts[i].split("\"")[0];
-                        cardNumbers[i - 1] = cardNumber;
-                    }
-                      
-                       // Check if the target card number exists in the array
-                   
-                    for (String cardNumber : cardNumbers) {
-                        if (cardNumber.equals(card.CardData)) {
-                            found = true;
-                            cardFound = cardNumber;
-                            break;
+                     int successIndex = responseData.indexOf("\"success\":");
+                     int valueStart = responseData.indexOf(":", successIndex) + 1;
+                      int valueEnd = responseData.indexOf(",", valueStart);
+                        if (valueEnd == -1) {
+                        valueEnd = responseData.indexOf("}", valueStart);
                         }
-                    }
-                    
-                     if (found) {
-                        System.out.println("Card number " + card.CardData + " exists in the API response.");
-                    } else {
-                        System.out.println("Card number " + card.CardData + " does not exist in the API response.");
-                    }
-//                    System.out.println("API Response: " + responseData);
+                         String successValue = responseData.substring(valueStart, valueEnd).trim();
+                         boolean success = Boolean.parseBoolean(successValue);
+                         
+                         if(success)
+                         {
+                             System.out.println(responseData);
+                              CommandDetail commandDetail = getCommandDetail();
+                              OpenDoor_Parameter parameter = new OpenDoor_Parameter(commandDetail); 
+                              parameter.Door.SetDoor(card.DoorNum(), 1);
+                              OpenDoor cmd = new OpenDoor(parameter);
+                              _Allocator.AddCommand(cmd);
+                              
+                              //save to database
+                              request_type = "saving";
+                              try{
+                                   URL url1 = new URL("https://usmgate.org/api/check-card");
+                                   HttpURLConnection connection1 = (HttpURLConnection) url1.openConnection();
+                                    connection1.setRequestMethod("POST");
+                                    connection1.setDoOutput(true);
+                                     String parameters1 = "id_number="+card.CardData+"&source="+door_scanned+"&scanned_type="+scanned_type+"&door_name="+door_name+"&request_type="+request_type+"";
+                                     try (OutputStream os1 = connection1.getOutputStream()) {
+                                     byte[] input1 = parameters1.getBytes(StandardCharsets.UTF_8);
+                                     os1.write(input1, 0, input1.length);
+                                     }
+                                      int responseCode1 = connection1.getResponseCode();
+                                       if (responseCode1 == HttpURLConnection.HTTP_OK) {
+                                            BufferedReader reader1 = new BufferedReader(new InputStreamReader(connection1.getInputStream()));
+                                            String line1;
+                                            StringBuilder response1 = new StringBuilder();
+                                             while ((line1 = reader1.readLine()) != null) {
+                                                    response1.append(line1);
+                                             }
+                                              reader1.close();
+                                              connection1.disconnect(); 
+                                              System.out.println("saved to database");
+                                       }
+                              }catch(Exception e)
+                              {
+                                   System.out.println(e.toString());
+                              }
+                             
+//                                 if (responseCode == HttpURLConnection.HTTP_OK) {
+//                                      
+//                                        System.out.println("saved to database");
+//                                 }else{
+//                                      System.out.println("failed saving to database");
+//                                 }
+                         }
+                     
+                            
                 } else {
-                    System.out.println("API Request failed with response code: " + responseCode);
+                     System.out.println("API Request failed with response code: " + responseCode);
                 }
+                
+                  
+//                if (responseCode == HttpURLConnection.HTTP_OK) { 
+//                    BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+//                    String line;
+//                    StringBuilder response = new StringBuilder();
+////
+//                    while ((line = reader.readLine()) != null) {
+//                        response.append(line);
+//                    }
+//                    reader.close();
+////
+////                   
+//                    String responseData = response.toString();
+//                    System.out.print(responseData);
+                            //open door     
+//                            
 
-                connection.disconnect();
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-             
-                   if (found) { 
-                       
-                       //POST DATA
-                       URL urlPost = new URL("http://165.232.165.96/api/create-card");
-                        HttpURLConnection connectionPost = (HttpURLConnection) urlPost.openConnection();
-                       connectionPost.setRequestMethod("POST");
-                        connectionPost.setRequestProperty("Content-Type", "application/json");
-                       Map<String, String> requestData = new HashMap<>();
-                        requestData.put("card_number", cardFound);
-                         String jsonInputString = mapToJson(requestData);
-                       // Enable input and output streams
-                        connectionPost.setDoOutput(true);
-                        // Write the JSON payload to the output stream
-                        try (OutputStream os = connectionPost.getOutputStream();
-                             OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8")) {
-                            osw.write(jsonInputString);
-                            osw.flush();
-                            osw.close();
-                        }
+
+//                } else {
+//                    System.out.println("API Request failed with response code: " + responseCode);
+//                }
+
+              
+
             
-                          int responseCodePost = connectionPost.getResponseCode();
-                           if (responseCodePost == HttpURLConnection.HTTP_OK) {
-                            // Read and print the response
-                            try (BufferedReader reader = new BufferedReader(new InputStreamReader(connectionPost.getInputStream()))) {
-                                String line;
-                                StringBuilder response = new StringBuilder();
-                                while ((line = reader.readLine()) != null) {
-                                    response.append(line);
-                                }
-                                System.out.println("API Response: " + response.toString());
-                            }
-                             CommandDetail commandDetail = getCommandDetail();//Get Command Detail Object
-                            OpenDoor_Parameter parameter = new OpenDoor_Parameter(commandDetail); //声明远程开门命令参数对象
-                             //设置开门参数 1-4 是门号，1是开门 0是不开门
-                             parameter.Door.SetDoor(card.DoorNum(), 1);
-                             OpenDoor cmd = new OpenDoor(parameter);
-                              //Add Command to Communication Connector Queue
-                             _Allocator.AddCommand(cmd);
-                        } else {
-                            System.out.println("API Request failed with response code: " + responseCodePost);
-                        }
-
-                        // Close the connection
-                        connectionPost.disconnect();
-                       
-                      
-                 
-                   }else{
-                       System.out.print("You are not allowed");
-                   }
             /*
             包含 出入记录、alarm记录、软件开门消息、门磁消息等
             */
