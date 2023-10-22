@@ -242,7 +242,7 @@ public class Test implements INConnectorEvent {
                    String scanned_type = "";
                    String door_name = "Door 1";
                    String request_type = "checking";
-                URL url = new URL("https://usm.org/api/check-card");
+                URL url = new URL("https://usmgate.org/api/check-card");
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 
                 connection.setRequestMethod("POST");
