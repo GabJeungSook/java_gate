@@ -293,7 +293,7 @@ public class Test implements INConnectorEvent {
                               OpenDoor cmd = new OpenDoor(parameter);
                               _Allocator.AddCommand(cmd);
                               
-                              //save to database test
+                              //save to database
                               request_type = "saving";
                               try{
                                    URL url1 = new URL("http://usmgate.org/api/check-card"); 
