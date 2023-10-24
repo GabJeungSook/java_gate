@@ -63,10 +63,10 @@ public class Test implements INConnectorEvent {
         //添加事件通知
         _Allocator.AddListener(this);
         try {
-            String LocalIP = "1.0.0.67";
+            String LocalIP = "1.0.0.83";
             int LocalPort = 8000;
             _Allocator.Listen(LocalIP, LocalPort);
-            System.out.println("Listening...");
+            System.out.println("Listening....");
             readTCPSetting();
         } catch (Exception e) {
             // Handle the exception
@@ -91,11 +91,11 @@ public class Test implements INConnectorEvent {
      
     
     
-     public CommandDetail getCommandDetail() {
-        TCPClientDetail tcpClient = new TCPClientDetail("1.0.0.67", 8000);
+    public CommandDetail getCommandDetail() { 
+        TCPClientDetail tcpClient = new TCPClientDetail("1.0.0.83", 8000);
         tcpClient.Timeout = 5000;//连接超时时间（毫秒）
         tcpClient.RestartCount = 0;//重新连接次数		
-        Door8800Identity idt = new Door8800Identity("MC-5924T23010053", "FFFFFFFF", E_ControllerType.Door8900);
+        Door8800Identity idt = new Door8800Identity("MC-5924T23010061", "FFFFFFFF", E_ControllerType.Door8900);
         CommandDetail commandDetail = new CommandDetail();
         commandDetail.Connector = tcpClient;
         commandDetail.Identity = idt;
@@ -215,7 +215,7 @@ public class Test implements INConnectorEvent {
     
      @Override
     public void CommandTimeout(INCommand cmd) {          
-        System.out.println("命令超时:"+cmd.getClass().toString());
+        System.out.println("Command timeout:"+cmd.getClass().toString());
     }
     
       @Override
@@ -240,9 +240,9 @@ public class Test implements INConnectorEvent {
                    String cardFound = "";
                    String door_scanned = "";
                    String scanned_type = "";
-                   String door_name = "Door 1";
+                   String door_name = "Door1";
                    String request_type = "checking";
-                URL url = new URL("http://usmgate.org/api/check-card");
+                URL url = new URL("http://146.190.86.129/api/check-card");
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 
                 connection.setRequestMethod("POST");
@@ -287,6 +287,7 @@ public class Test implements INConnectorEvent {
                          if(success)
                          {
                              System.out.println(responseData);
+                             System.out.println(event);
                               CommandDetail commandDetail = getCommandDetail();
                               OpenDoor_Parameter parameter = new OpenDoor_Parameter(commandDetail); 
                               parameter.Door.SetDoor(card.DoorNum(), 1);
@@ -296,7 +297,7 @@ public class Test implements INConnectorEvent {
                               //save to database
                               request_type = "saving";
                               try{
-                                   URL url1 = new URL("http://usmgate.org/api/check-card"); 
+                                   URL url1 = new URL("http://146.190.86.129/api/check-card"); 
                                    HttpURLConnection connection1 = (HttpURLConnection) url1.openConnection();
                                     connection1.setRequestMethod("POST");
                                     connection1.setDoOutput(true);
