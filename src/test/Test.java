@@ -85,7 +85,7 @@ public class Test implements INConnectorEvent {
         CommandParameter parameter = new CommandParameter(getCommandDetail());
         ReadTCPSetting cmd = new ReadTCPSetting(parameter);
         _Allocator.AddCommand(cmd);
-        System.out.println("Start reading device TCP parameters");
+        System.out.println("Start reading device TCP parameters"); 
 
     }
      
