@@ -240,7 +240,7 @@ public class Test implements INConnectorEvent {
                    String cardFound = "";
                    String door_scanned = "";
                    String scanned_type = "";
-                   String door_name = "Door1";
+                   String door_name = "Door2";
                    String request_type = "checking";
                 URL url = new URL("http://usmgate.org/api/check-card");
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
