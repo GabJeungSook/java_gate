@@ -63,7 +63,7 @@ public class Test implements INConnectorEvent {
         //添加事件通知
         _Allocator.AddListener(this);
         try {
-            String LocalIP = "1.0.0.82";
+            String LocalIP = "192.168.110.22";
             int LocalPort = 8000;
             _Allocator.Listen(LocalIP, LocalPort);
             System.out.println("Listening....");
@@ -92,7 +92,7 @@ public class Test implements INConnectorEvent {
     
     
     public CommandDetail getCommandDetail() { 
-        TCPClientDetail tcpClient = new TCPClientDetail("1.0.0.82", 8000);
+        TCPClientDetail tcpClient = new TCPClientDetail("192.168.110.22", 8000);
         tcpClient.Timeout = 5000;//连接超时时间（毫秒）
         tcpClient.RestartCount = 0;//重新连接次数		
         Door8800Identity idt = new Door8800Identity("MC-5924T23010061", "FFFFFFFF", E_ControllerType.Door8900);
@@ -251,10 +251,10 @@ public class Test implements INConnectorEvent {
                 if(card.DoorNum() == 2)
                 {
                     door_scanned = "left";
-                    scanned_type = "exit";
+                    scanned_type = "entry";
                 }else{
                     door_scanned = "right";
-                    scanned_type = "entry";
+                    scanned_type = "exit";
                 }
                 
               String parameters = "id_number="+card.CardData+"&source="+door_scanned+"&scanned_type="+scanned_type+"&door_name="+door_name+"&request_type="+request_type+"";
