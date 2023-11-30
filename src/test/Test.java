@@ -251,10 +251,10 @@ public class Test implements INConnectorEvent {
                 if(card.DoorNum() == 2)
                 {
                     door_scanned = "left";
-                    scanned_type = "entry";
+                    scanned_type = "exit";
                 }else{
                     door_scanned = "right";
-                    scanned_type = "exit";
+                    scanned_type = "entry";
                 }
                 
               String parameters = "id_number="+card.CardData+"&source="+door_scanned+"&scanned_type="+scanned_type+"&door_name="+door_name+"&request_type="+request_type+"";
